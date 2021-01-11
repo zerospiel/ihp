@@ -3,7 +3,6 @@ package ing
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os/exec"
 	"regexp"
@@ -20,13 +19,17 @@ const (
 	magicNumber   = 20
 )
 
+// OpenLink opens the given link in a new tab in
+// your default browser.
+//
+// Should fail if no Chrome presented on executor.
 func OpenLink(raw string) error {
 	ic := &gGetter{
-		c: &http.Client{
-			Transport: http.DefaultTransport,
-			Timeout:   time.Second * 5,
-		},
-		rawUrl: raw,
+		// c: &http.Client{
+		// 	Transport: http.DefaultTransport,
+		// 	Timeout:   time.Second * 5,
+		// },
+		rawURL: raw,
 	}
 
 	i, err := ic.getRawG()
@@ -41,12 +44,13 @@ func OpenLink(raw string) error {
 	return performOpen(runtime.GOOS, i)
 }
 
-var cdnRe = regexp.MustCompile(`.*content="(.*fbcdn\.net.*)".*`)
+var cdnRe = regexp.MustCompile(`.*content="(.*(?:fbcdn\.net|cdninstagram\.com).*)".*`)
 
+// TODO: remove usage of chromedp, it's too slow and won't work w/o chrome
 func (s *gGetter) getRawG() (string, error) {
-	initU, err := url.Parse(s.rawUrl)
+	initU, err := url.Parse(s.rawURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse raw string '%s': %w", s.rawUrl, err)
+		return "", fmt.Errorf("failed to parse raw string '%s': %w", s.rawURL, err)
 	}
 
 	if !strings.Contains(initU.Host, instagramHost) {
@@ -71,9 +75,9 @@ func (s *gGetter) getRawG() (string, error) {
 	if err = chromedp.Run(ctx,
 		chromedp.Navigate(initU.String()),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			node, err := dom.GetDocument().WithDepth(1).Do(ctx)
-			if err != nil {
-				return err
+			node, rerr := dom.GetDocument().WithDepth(1).Do(ctx)
+			if rerr != nil {
+				return rerr
 			}
 			res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
 			return err
@@ -105,7 +109,7 @@ func performOpen(goos, s string) error {
 		cmdA = "xdg-open"
 	}
 
-	args := []string{cmdA, s} // nolint: gosec
+	args := []string{cmdA, s}
 	cmd := exec.Command(args[0], args[1:]...)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to perform '%s': %w", cmd.String(), err)

@@ -34,3 +34,4 @@ vendor/
 
 .DS_Store
 dist/
+bin/

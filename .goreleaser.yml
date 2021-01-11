@@ -1,0 +1,47 @@
+before:
+  hooks:
+    - go mod download
+project_name: ihp
+release:
+  github:
+    owner: zerospiel
+    name: ihp
+  prerelease: true
+builds:
+  - id: ihp
+    dir: .
+    binary: ./bin/ihp
+    main: ./cmd/ihp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
+    gobinary: "go"
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: binary
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - ^[+\-*\w\[\]]*?\s*docs:'?
+      - ^[+\-*\w\[\]]*?\s*test:'?
+      - ^test
+      - ^doc
+      - ^dnt
+      - typo

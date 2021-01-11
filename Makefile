@@ -1,7 +1,5 @@
 LOCAL_BIN:=$(CURDIR)/bin
-ifeq ($(GOBIN),)
-GOBIN:=$(GOPATH)/bin
-endif
+GOBIN?=$(GOPATH)/bin
 
 .PHONY: build
 build:
@@ -10,3 +8,13 @@ build:
 .PHONY: install
 install:
 	go build -o $(GOBIN)/ihp $(CURDIR)/cmd/ihp
+
+.PHONY: lint
+lint:
+	@golangci-lint run
+
+.gr:
+	@rm -fr $(CURDIR)/dist && goreleaser --snapshot
+
+.gb:
+	@rm -fr $(CURDIR)/dist && goreleaser build --snapshot
